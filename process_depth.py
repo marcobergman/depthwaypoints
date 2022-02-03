@@ -130,7 +130,7 @@ class SimulatorFrame(wx.Frame):
                 
             m = math.floor(abs(actualDepth))
             dm = math.floor((abs(actualDepth) - m )*10)
-            icon = "{}_{}-{}.png".format(name, m, dm)
+            icon = "{}_{}-{}".format(name, m, dm)
             
             if (curdepth == self.mindepth):
                 print ("yes")
@@ -139,12 +139,25 @@ class SimulatorFrame(wx.Frame):
         
         
         
+        def scale (x):
+            s = 32
+            a = x % 32
+            for z in range(5, -1, -1):
+                if a > 31:
+                    s = 2 ** z
+                    a = a - 32
+                a = a * 2
+            return (s * 800)
+
+
+
         def generateFile (event):
             rmc = 0
             dpt = 0
             waypoints = 0
             lastlat = 0
             lastlon = 0
+            i = 0
             fromTimeStamp = "" + self.mindate + startTime.GetValue()
             toTimeStamp = "" + self.maxdate + endTime.GetValue()
             text9.SetLabel("")
@@ -171,15 +184,15 @@ class SimulatorFrame(wx.Frame):
                         distance = math.sqrt(((curlon - lastlon) * math.cos(curlat/180*math.pi)) ** 2 + (curlat - lastlat) ** 2) * 60 * 1852
                         
                         if (distance > 10000):
-                            lastlat = curlat; lastlon = curlon; distance = 0;
+                            lastlat = curlat; lastlon = curlon; #distance = 0;
                             
                         if (distance > float (interval.GetValue())):
                             waypoints += 1
-                            gpx = '  <wpt lat="{}" lon="{}"><sym>{}</sym></wpt>' \
-                                .format(curlat, curlon, depthIcon(curdepth, startTide.GetValue(), endTide.GetValue()))
+                            gpx = '  <wpt lat="{}" lon="{}"><sym>{}</sym><extensions><opencpn:scale_min_max UseScale="true" ScaleMin="{}" /></extensions></wpt>' \
+                                .format(curlat, curlon, depthIcon(curdepth, startTide.GetValue(), endTide.GetValue()), scale(i))
                             print (gpx)
                             f.write(gpx + "\n")
-                            lastlat = curlat; lastlon = curlon;
+                            lastlat = curlat; lastlon = curlon; i += 1;
                             
             text9.SetLabel("{} waypoints".format(waypoints))
             f.write ('</gpx>')
