@@ -7,6 +7,7 @@ import math
 DEFAULT_FILENAME = "c:\\vdr.txt"
 DEFAULT_OUTPUTPATH = "c:\\ProgramData\\opencpn\\layers\\dieptes.gpx"
 GPX_HEADER='<?xml version="1.0" encoding="UTF-8" ?>\n<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1">\n'
+DEFAULT_INTERVAL = 15
 
 class SimulatorFrame(wx.Frame):
 
@@ -66,7 +67,7 @@ class SimulatorFrame(wx.Frame):
         sizer.Add(startTide, pos = (3, 1), flag = wx.EXPAND|wx.ALL, border = 3)
         endTide = wx.TextCtrl(panel, value="0", size=(80,20))
         sizer.Add(endTide, pos = (3, 3), flag = wx.EXPAND|wx.ALL, border = 3)
-        interval = wx.TextCtrl(panel, value="10", size=(80,20))
+        interval = wx.TextCtrl(panel, value=str(DEFAULT_INTERVAL), size=(80,20))
         sizer.Add(interval, pos = (4, 1), flag = wx.EXPAND|wx.ALL, border = 3)
         
         def OnChange_startTide(event):
@@ -101,7 +102,7 @@ class SimulatorFrame(wx.Frame):
                     if (depth < self.mindepth): self.mindepth = depth;
                     if (depth > self.maxdepth): self.maxdepth = depth;
                     dpt += 1
-            text7.SetLabel("Lines={}, RMC={}, DPT={}, depth={} - {}".format(l, rmc, dpt, self.mindepth, self.maxdepth))
+            text7.SetLabel("Lines={}, RMC={}, DPT={}, depth={} - {}".format(l, rmc, dpt, round(self.mindepth, 1), round(self.maxdepth, 1)))
             startTime.SetValue(self.mintime)
             endTime.SetValue(self.maxtime)
             buttonGenerate.Enable()
@@ -147,7 +148,7 @@ class SimulatorFrame(wx.Frame):
                     s = 2 ** z
                     a = a - 32
                 a = a * 2
-            return (s * 800)
+            return (s * 1600)
 
 
 
