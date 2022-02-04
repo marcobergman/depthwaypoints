@@ -3,11 +3,21 @@ import wx
 import socket
 import time
 import math
+import platform
+import re    ## regular expressions
 
-DEFAULT_FILENAME = "c:\\vdr.txt"
-DEFAULT_OUTPUTPATH = "c:\\ProgramData\\opencpn\\layers\\dieptes.gpx"
 GPX_HEADER='<?xml version="1.0" encoding="UTF-8" ?>\n<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1">\n'
 DEFAULT_INTERVAL = 15
+
+
+if (platform.system() == "Windows"):
+    DEFAULT_FILENAME = "c:\\vdr.txt"
+    DEFAULT_OUTPUTPATH = "c:\\ProgramData\\opencpn\\layers\\dieptes.gpx"
+else:
+    DEFAULT_FILENAME = "/tmp/nmea.log"
+    DEFAULT_OUTPUTPATH = ".opencpn/layers/dieptes.gpx"
+
+
 
 class SimulatorFrame(wx.Frame):
 
@@ -26,7 +36,7 @@ class SimulatorFrame(wx.Frame):
         ## Set up Statictext
         text1 = wx.StaticText(panel, label = "Input file NMEA0183")
         sizer.Add(text1, pos = (0, 0), flag = wx.ALL, border = 3)
-        text2 = wx.StaticText(panel, label = "Start time")
+        text2 = wx.StaticText(panel, label = "Start time (UTC)")
         sizer.Add(text2, pos = (2, 0), flag = wx.ALL, border = 3)
         text3 = wx.StaticText(panel, label = "End time")
         sizer.Add(text3, pos = (2, 2), flag = wx.ALL, border = 3)
@@ -37,7 +47,7 @@ class SimulatorFrame(wx.Frame):
         text6 = wx.StaticText(panel, label = "Interval (m)")
         sizer.Add(text6, pos = (4, 0), flag = wx.ALL, border = 3)
         text7 = wx.StaticText(panel)
-        sizer.Add(text7, pos = (1, 0), flag = wx.ALL, border = 3)
+        sizer.Add(text7, pos = (1, 0), flag = wx.ALL, border = 3, span=(1,4))
         text9 = wx.StaticText(panel)
         sizer.Add(text9, pos = (4, 2), flag = wx.ALL, border = 3)
         text10 = wx.StaticText(panel, label = "Output file GPX")
@@ -91,13 +101,13 @@ class SimulatorFrame(wx.Frame):
             for lines in open(filename.GetValue(), 'r'):
                 l += 1
                 line = lines.strip().split(',')
-                if (line[0] == "$GPRMC"):
+                if (re.match(r"\$[A-Z]{2}RMC", line[0])):
                     rmc += 1
                     if (line[1] < self.mintime): self.mintime = line[1][:6]
                     if (line[1] > self.maxtime): self.maxtime = line[1][:6]
                     if (line[9] < self.mindate): self.mindate = line[9]
                     if (line[9] > self.maxdate): self.maxdate = line[9]
-                if (line[0] == "$SDDPT"):
+                if (re.match(r"\$[A-Z]{2}DPT", line[0])):
                     depth = float(line[1])
                     if (depth < self.mindepth): self.mindepth = depth;
                     if (depth > self.maxdepth): self.maxdepth = depth;
@@ -168,7 +178,7 @@ class SimulatorFrame(wx.Frame):
             for lines in open(filename.GetValue(), 'r'):
                 line = lines.strip().split(',')
                 
-                if (line[0] == "$GPRMC"):
+                if (re.match(r"\$[A-Z]{2}RMC", line[0])):
                     curdate = line[9]
                     curtime = line[1][:6]
                     timeStamp = "" + curdate + curtime
@@ -178,7 +188,7 @@ class SimulatorFrame(wx.Frame):
                         curlat = convertLatLon(line[3])
                         curlon = convertLatLon(line[5])
                         
-                if (line[0] == "$SDDPT"):
+                if (re.match(r"\$[A-Z]{2}DPT", line[0])):
                     if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
                         dpt += 1
                         curdepth = line[1]
