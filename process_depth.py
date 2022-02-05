@@ -12,10 +12,10 @@ DEFAULT_INTERVAL = 15
 
 if (platform.system() == "Windows"):
     DEFAULT_FILENAME = "c:\\vdr.txt"
-    DEFAULT_OUTPUTPATH = "c:\\ProgramData\\opencpn\\layers\\dieptes.gpx"
+    DEFAULT_OUTPUTPATH = "c:\\ProgramData\\opencpn\\layers\\depths.gpx"
 else:
     DEFAULT_FILENAME = "/tmp/nmea.log"
-    DEFAULT_OUTPUTPATH = ".opencpn/layers/dieptes.gpx"
+    DEFAULT_OUTPUTPATH = ".opencpn/layers/depths.gpx"
 
 
 
@@ -40,11 +40,11 @@ class SimulatorFrame(wx.Frame):
         sizer.Add(text2, pos = (2, 0), flag = wx.ALL, border = 3)
         text3 = wx.StaticText(panel, label = "End time")
         sizer.Add(text3, pos = (2, 2), flag = wx.ALL, border = 3)
-        text4 = wx.StaticText(panel, label = "Start tide")
+        text4 = wx.StaticText(panel, label = "Start tide (m above MSL)")
         sizer.Add(text4, pos = (3, 0), flag = wx.ALL, border = 3)
         text5 = wx.StaticText(panel, label = "End tide")
         sizer.Add(text5, pos = (3, 2), flag = wx.ALL, border = 3)
-        text6 = wx.StaticText(panel, label = "Interval (m)")
+        text6 = wx.StaticText(panel, label = "Waypoint interval (m)")
         sizer.Add(text6, pos = (4, 0), flag = wx.ALL, border = 3)
         text7 = wx.StaticText(panel)
         sizer.Add(text7, pos = (1, 0), flag = wx.ALL, border = 3, span=(1,4))
