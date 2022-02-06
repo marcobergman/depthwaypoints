@@ -1,6 +1,6 @@
 # Depthwaypoints
 
-Tool that converts NMEA0183 log files into waypoints in GPX files, with the depth encoded in the \<sym\> tags. With the right UserIcons, this shows depth soundings in plotters like OpenCPN.
+Tool that converts depth soudings from NMEA0183 log files into waypoints in GPX files, with the depth encoded in the \<sym\> tags. With the right UserIcons, this shows depth soundings in plotters like OpenCPN. User Icons provided need to be copied into the UserIcons directory of OpenCPN. The waypoints are distributed over increasing scale levels, so they don't clutter at higher scles.
   
   ![image](https://user-images.githubusercontent.com/17980560/151816012-7cdc6f2e-4aa4-4070-8036-91ec3e95901e.png)
 
