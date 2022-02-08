@@ -12,3 +12,7 @@ Tool that converts depth soudings from NMEA0183 log files into waypoints in GPX 
   <wpt lat="53.054181666666665" lon="5.388521666666667"><sym>depth_1-5</sym></wpt>
   <wpt lat="53.05417666666666" lon="5.38852"><sym>depth_1-6</sym></wpt>
 ```
+
+The tool requires NMEA0183 DPT and RMC messages in a log file. To record such a log file, you can use
+* the OpenCPN VDR plugin (Voyage Data Recorder), or
+* the [SignalK SK-NMEA0183-VDR plugin](https://github.com/marcobergman/sk-nmea0183-vdr).
