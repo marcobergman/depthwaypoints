@@ -5,16 +5,18 @@ import time
 import math
 import platform
 import re    ## regular expressions
+import datetime
+import locale
 
 GPX_HEADER='<?xml version="1.0" encoding="UTF-8" ?>\n<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1">\n'
 DEFAULT_INTERVAL = 15
 
 
 if (platform.system() == "Windows"):
-    DEFAULT_FILENAME = "c:\\vdr.txt"
+    DEFAULT_FILENAME = "c:\\nmea.log"
     DEFAULT_OUTPUTPATH = "c:\\ProgramData\\opencpn\\layers\\depths.gpx"
 else:
-    DEFAULT_FILENAME = "/tmp/nmea.log"
+    DEFAULT_FILENAME = "/extra/nmea.log"
     DEFAULT_OUTPUTPATH = ".opencpn/layers/depths.gpx"
 
 
@@ -87,6 +89,8 @@ class SimulatorFrame(wx.Frame):
         outputfilename = wx.TextCtrl(panel, value=DEFAULT_OUTPUTPATH, size=(340,20))
         sizer.Add(outputfilename, pos = (5,1), flag = wx.EXPAND|wx.ALL, border = 3, span=(1,4))
 
+
+
         def loadFile(event):
             l = 0
             rmc = 0
@@ -101,7 +105,7 @@ class SimulatorFrame(wx.Frame):
             for lines in open(filename.GetValue(), 'r'):
                 l += 1
                 line = lines.strip().split(',')
-                if (re.match(r"\$[A-Z]{2}RMC", line[0])):
+                if (re.match(r"\$[A-Z]{2}RMC", line[0]) and line[1] != ""):
                     rmc += 1
                     if (line[1] < self.mintime): self.mintime = line[1][:6]
                     if (line[1] > self.maxtime): self.maxtime = line[1][:6]
@@ -131,8 +135,22 @@ class SimulatorFrame(wx.Frame):
         
         
         
-        def depthIcon (curdepth, startTide, endTide):
-            actualDepth = round(float(curdepth) - (float(startTide) + float(endTide))/2, 1)  # 1 digit
+        def nmeaToIso (timestamp):
+            locale.setlocale(locale.LC_ALL, 'en_US')
+            try:
+                date_time_obj = datetime.datetime.strptime(timestamp, '%d%m%y%H%M%S')
+                new_minute = math.floor(date_time_obj.minute/10)*10
+                val = date_time_obj.replace(second=0, minute=new_minute).isoformat()
+            except Exception as e:
+                print ("nmeaToIso", timestamp, str(e))
+                pass 
+            return val
+        
+        
+        
+        def depthIcon (curdepth, waterLevel):
+            
+            actualDepth = round(float(curdepth) - float(waterLevel) , 1)  # 1 digit
             
             if (actualDepth < 0):
                 name = 'dry'
@@ -169,6 +187,8 @@ class SimulatorFrame(wx.Frame):
             lastlat = 0
             lastlon = 0
             i = 0
+            print ("Generating waypoint file", outputfilename.GetValue())
+            
             fromTimeStamp = "" + self.mindate + startTime.GetValue()
             toTimeStamp = "" + self.maxdate + endTime.GetValue()
             text9.SetLabel("")
@@ -178,36 +198,47 @@ class SimulatorFrame(wx.Frame):
             for lines in open(filename.GetValue(), 'r'):
                 line = lines.strip().split(',')
                 
-                if (re.match(r"\$[A-Z]{2}RMC", line[0])):
-                    curdate = line[9]
-                    curtime = line[1][:6]
-                    timeStamp = "" + curdate + curtime
-                    
-                    if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
-                        rmc += 1
-                        curlat = convertLatLon(line[3])
-                        curlon = convertLatLon(line[5])
+                try:
+                    if (re.match(r"\$[A-Z]{2}RMC", line[0])):
+                        curdate = line[9]
+                        curtime = line[1][:6]
+                        timeStamp = "" + curdate + curtime
                         
-                if (re.match(r"\$[A-Z]{2}DPT", line[0])):
-                    if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
-                        dpt += 1
-                        curdepth = line[1]
-                        distance = math.sqrt(((curlon - lastlon) * math.cos(curlat/180*math.pi)) ** 2 + (curlat - lastlat) ** 2) * 60 * 1852
-                        
-                        if (distance > 10000):
-                            lastlat = curlat; lastlon = curlon; #distance = 0;
+                        if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
+                            rmc += 1
+                            curlat = convertLatLon(line[3])
+                            curlon = convertLatLon(line[5])
                             
-                        if (distance > float (interval.GetValue())):
-                            waypoints += 1
-                            gpx = '  <wpt lat="{}" lon="{}"><sym>{}</sym><extensions><opencpn:scale_min_max UseScale="true" ScaleMin="{}" /></extensions></wpt>' \
-                                .format(curlat, curlon, depthIcon(curdepth, startTide.GetValue(), endTide.GetValue()), scale(i))
-                            print (gpx)
-                            f.write(gpx + "\n")
-                            lastlat = curlat; lastlon = curlon; i += 1;
+                    if (re.match(r"\$[A-Z]{2}DPT", line[0])):
+                        if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
+                            dpt += 1
+                            curdepth = line[1]
+                            distance = math.sqrt(((curlon - lastlon) * math.cos(curlat/180*math.pi)) ** 2 + (curlat - lastlat) ** 2) * 60 * 1852
                             
+                            if (distance > 10000):
+                                lastlat = curlat; lastlon = curlon; #distance = 0; to deal with initial measurement
+                                
+                            if (distance > float (interval.GetValue())):
+                                waypoints += 1
+                                
+                                waterLevel = tidalData.getWeighedWaterLevel(nmeaToIso(timeStamp), curlat, curlon) / 100
+                                
+                                gpx = '  <wpt lat="{}" lon="{}"><sym>{}</sym><extensions><opencpn:scale_min_max UseScale="true" ScaleMin="{}" /></extensions></wpt>' \
+                                    .format(curlat, curlon, depthIcon(curdepth, waterLevel), scale(i))
+                                ### print (gpx)
+                                f.write(gpx + "\n")
+                                lastlat = curlat; lastlon = curlon; i += 1;
+                except Exception as e:
+                    #print ("exception processing line: " + lines  + str(e) + "\n")
+                    pass
+ 
+ 
             text9.SetLabel("{} waypoints".format(waypoints))
             f.write ('</gpx>')
             f.close()
+            
+            print ("Waypoint file created with {} waypoints".format(waypoints))
+            tidalData.printStatistics()
            
         buttonGenerate.Bind(wx.EVT_BUTTON, generateFile)
 
@@ -220,6 +251,11 @@ class SimulatorFrame(wx.Frame):
         print ('--- Window closed')
         self.Destroy()
         
+
+import tidaldata
+
+tidalData = tidaldata.TidalData()
+tidalData.readStations()
 
 app = wx.App()
 myFrame = SimulatorFrame(None, title = 'Depth processor')
