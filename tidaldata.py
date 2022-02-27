@@ -55,6 +55,8 @@ class TidalData(object):
                     f += 1
                     
             print (f, "files read")
+            if (f == 0):
+                print ("Csv files can be downloaded from {}.\nSee the file '{}'.".format(self.stationSource, STATIONSFILE))
 
 
 
@@ -75,12 +77,17 @@ class TidalData(object):
 
 
     def readStations(self):
-        with open (STATIONSFILE, newline='') as statsionsfile:
-            allstations = csv.reader(statsionsfile, delimiter='\t')
-            for row in allstations:
-                tidalStation = self.TidalStation(row[0], row[1], row[2], row[3], row[4], row[5])
-                self.stations[row[0]] = tidalStation
-                tidalStation.loadStationData()
+        try:
+            with open (STATIONSFILE, newline='') as stationsfile:
+                allstations = csv.reader(stationsfile, delimiter='\t')
+                for row in allstations:
+                    tidalStation = self.TidalStation(row[0], row[1], row[2], row[3], row[4], row[5])
+                    self.stations[row[0]] = tidalStation
+                    tidalStation.loadStationData()
+        except Exception as e:
+            print (str(e))
+            print ("Could not load '{}'. Not able to correct for tidal changes.".format(STATIONSFILE))
+            print ("This file can be downloaded from github and needs to be put in the same directory as the python/exe file.")
 
 
 
