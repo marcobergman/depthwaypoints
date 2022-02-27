@@ -40,7 +40,6 @@ class TidalData(object):
                     n = 0
                     for row in tidalRows:
                         try:
-                            #print (row)
                             date_time_str = row[0] + " " + row[1];  # e.g. 26-2-2022 16:20:00
                             date_time_obj = datetime.datetime.strptime(date_time_str, '%d-%m-%Y %H:%M:%S')
                             date_time_utc = local.localize(date_time_obj, is_dst=None).astimezone(pytz.utc).replace(tzinfo=None).isoformat()
@@ -48,9 +47,8 @@ class TidalData(object):
                                 self.waterLevel[date_time_utc] = row[4]
                                 n += 1
                         except Exception as e:
-                            pass
                             #print ("*** loadStationData:", str(e))
-                    #print (self.waterLevel)
+                            pass
                     print (" -", n, "waterLevels read")
                     f += 1
                     
@@ -102,8 +100,13 @@ class TidalData(object):
                 #print ("*** getAverageWaterLevel:", str(e))
                 pass
                 
-        return (m / n)
-
+            if (n != 0):
+                result = m / n
+            else:
+                result = 0
+                
+            return result
+ 
  
 
     def getWeighedWaterLevel(self, utcTimeStamp, lat, lon):
@@ -116,13 +119,17 @@ class TidalData(object):
                 m += self.stations[station].getStationWaterLevel(utcTimeStamp) * weighingFactor
                 n += weighingFactor
                 
-            result = m / n
-            self.corrected += 1
+            if (n != 0):
+                result = m / n
+                self.corrected += 1
+            else:
+                result = 0
+                self.uncorrected += 1
             
         except Exception as e:
-                # print ("*** getWeighedWaterLevel:", str(e))
+                print ("*** getWeighedWaterLevel:", str(e))
                 self.uncorrected += 1
-                result = None
+                result = 0
                 
         return result
 
@@ -140,8 +147,8 @@ if __name__ == '__main__':
     tidalData = TidalData()
     tidalData.readStations()
     t = '2022-02-26T11:20:00'
-    print ("Kornwerd 2022-03-01T11:20:00", tidalData.stations['Kornwerd'].getStationWaterLevel(t))
-    print ("Harlingen 2022-03-01T11:20:00", tidalData.stations['Harlingen'].getStationWaterLevel(t))
+    print ("Kornwerd", tidalData.stations['Kornwerd'].getStationWaterLevel(t))
+    print ("Harlingen", tidalData.stations['Harlingen'].getStationWaterLevel(t))
     print ("Average:", tidalData.getAverageWaterLevel(t))
     print ("Weighed average (nabij Harlingen):", tidalData.getWeighedWaterLevel(t, 53.176993333, 5.40))
     print ("Weighed average (nabij Kornwerd):", tidalData.getWeighedWaterLevel(t, 53.079620000, 5.33))

@@ -186,7 +186,8 @@ class SimulatorFrame(wx.Frame):
             waypoints = 0
             lastlat = 0
             lastlon = 0
-            i = 0
+            i = 0  # cycle for scale pendulum
+            n = 0  # line counter for verbose exception handling 
             print ("Generating waypoint file", outputfilename.GetValue())
             
             fromTimeStamp = "" + self.mindate + startTime.GetValue()
@@ -196,6 +197,7 @@ class SimulatorFrame(wx.Frame):
             f.write(GPX_HEADER)
             
             for lines in open(filename.GetValue(), 'r'):
+                n += 1
                 line = lines.strip().split(',')
                 
                 try:
@@ -229,7 +231,7 @@ class SimulatorFrame(wx.Frame):
                                 f.write(gpx + "\n")
                                 lastlat = curlat; lastlon = curlon; i += 1;
                 except Exception as e:
-                    #print ("exception processing line: " + lines  + str(e) + "\n")
+                    print ("exception processing line {} of {}: ".format(i, filename.GetValue()) + lines  + str(e))
                     pass
  
  
