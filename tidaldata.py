@@ -58,8 +58,12 @@ class TidalData(object):
 
 
 
-        def getStationWaterLevel (self, utcTimeStamp):       
-            return int(self.waterLevel[utcTimeStamp])
+        def getStationWaterLevel (self, utcTimeStamp):
+            try:
+                result = int(self.waterLevel[utcTimeStamp])
+            except:
+                result = None
+            return result
 
 
 
@@ -89,26 +93,6 @@ class TidalData(object):
 
 
 
-    def getAverageWaterLevel(self, utcTimeStamp):
-        m = 0
-        n = 0
-        for station in self.stations:
-            try:
-                m += self.stations[station].getStationWaterLevel(utcTimeStamp)
-                n += 1
-            except Exception as e:
-                #print ("*** getAverageWaterLevel:", str(e))
-                pass
-                
-            if (n != 0):
-                result = m / n
-            else:
-                result = 0
-                
-            return result
- 
- 
-
     def getWeighedWaterLevel(self, utcTimeStamp, lat, lon):
         m = 0
         n = 0
@@ -116,8 +100,11 @@ class TidalData(object):
             for station in self.stations:
                 distanceToStation = self.stations[station].getStationDistance(lat, lon)
                 weighingFactor = 1 / distanceToStation
-                m += self.stations[station].getStationWaterLevel(utcTimeStamp) * weighingFactor
-                n += weighingFactor
+                waterLevel = self.stations[station].getStationWaterLevel(utcTimeStamp)
+                
+                if (waterLevel != None):
+                    m += self.stations[station].getStationWaterLevel(utcTimeStamp) * weighingFactor
+                    n += weighingFactor
                 
             if (n != 0):
                 result = m / n
@@ -127,7 +114,7 @@ class TidalData(object):
                 self.uncorrected += 1
             
         except Exception as e:
-                print ("*** getWeighedWaterLevel:", str(e))
+                print ("*** getWeighedWaterLevel:", utcTimeStamp, lat, lon, n, m, distanceToStation, str(e))
                 self.uncorrected += 1
                 result = 0
                 
