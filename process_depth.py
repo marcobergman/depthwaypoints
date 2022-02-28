@@ -253,7 +253,12 @@ class SimulatorFrame(wx.Frame):
         print ('--- Window closed')
         self.Destroy()
         
+import os
+full_path = os.path.realpath(__file__)
+path, filename = os.path.split(full_path)
+os.chdir(path)
 
+        
 import tidaldata
 
 tidalData = tidaldata.TidalData()
