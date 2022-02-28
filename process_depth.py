@@ -257,10 +257,8 @@ import os
 full_path = os.path.realpath(__file__)
 path, filename = os.path.split(full_path)
 os.chdir(path)
-
         
 import tidaldata
-
 tidalData = tidaldata.TidalData()
 tidalData.readStations()
 
