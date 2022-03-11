@@ -4,15 +4,48 @@ import datetime
 import pytz
 import math
 
+import http.client
+import re
+from urllib.parse import urlparse
+
 STATIONSFILE = "tidalstations.conf"
 
+
+
+def getHttps(url):
+    o = urlparse(url)
+    conn = http.client.HTTPSConnection(o.netloc)
+    conn.request("GET", "{}?{}".format(o.path, o.query))
+
+    r1 = conn.getresponse()
+    if (r1.status != 200):
+        print ("*** Could not retrieve {}".format(url))
+        return
+    d = r1.headers['content-disposition']
+    fname = re.findall("filename=(.+)", d)
+
+    print ("Fetching {} from {}...".format(fname[0], o.netloc))
+
+    data1 = r1.read()
+    f = open(fname[0], "wb")
+    f.write(data1)
+    f.close()
+    
+    conn.close()
+
+    
+    
 class TidalData(object):
+
+    FETCH_DATA = 1
+    DONT_FETCH_DATA = 0
 
     stations = {}
    
     corrected = 0
     uncorrected = 0
-        
+
+    
     class TidalStation (object):
     
         
@@ -29,12 +62,11 @@ class TidalData(object):
  
  
         def loadStationData(self):
-            print ("Loading station data for station {} with name {}".format(self.stationName, self.csvFileName))
+            print ("Loading {} for {}".format(self.csvFileName, self.stationName))
             local=pytz.timezone('Etc/GMT-1')
             
             f = 0
             for file in glob.glob(self.csvFileName):
-                print (" - reading file {}".format(file))
                 with open(file) as csvfile:
                     tidalRows = csv.reader(csvfile, delimiter=';')
                     n = 0
@@ -49,12 +81,11 @@ class TidalData(object):
                         except Exception as e:
                             #print ("*** loadStationData:", str(e))
                             pass
-                    print (" -", n, "waterLevels read")
+                    print ("- file {} read; {} waterLevels.".format(file, n))
                     f += 1
                     
-            print (f, "files read")
             if (f == 0):
-                print ("Csv files can be downloaded from {}.\nSee the file '{}'.".format(self.stationSource, STATIONSFILE))
+                print ("No file: go online and press Fetch to download csv files from {}.\nSee the file '{}'.".format(self.stationSource, STATIONSFILE))
 
 
 
@@ -77,15 +108,17 @@ class TidalData(object):
 
 
 
-
-    def readStations(self):
+    def readStations(self, action):
         try:
             with open (STATIONSFILE, newline='') as stationsfile:
                 allstations = csv.reader(stationsfile, delimiter='\t')
                 for row in allstations:
                     tidalStation = self.TidalStation(row[0], row[1], row[2], row[3], row[4], row[5])
                     self.stations[row[0]] = tidalStation
+                    if (action == self.FETCH_DATA):
+                        getHttps(row[5])
                     tidalStation.loadStationData()
+            print ("OK - Tidal stations processed.")
         except Exception as e:
             print (str(e))
             print ("Could not load '{}'. Not able to correct for tidal changes.".format(STATIONSFILE))
@@ -107,7 +140,7 @@ class TidalData(object):
                     n += weighingFactor
                 
             if (n != 0):
-                result = m / n
+                result = m / n / 100
                 self.corrected += 1
             else:
                 result = 0
@@ -123,8 +156,7 @@ class TidalData(object):
 
 
     def printStatistics(self):
-        print ("{} waypoints corrected with tidal data".format(self.corrected) )
-        print ("{} waypoints NOT corrected with tidal data".format(self.uncorrected) )
+        print ("{}% of waypoints corrected with tidal data".format(100* self.corrected/(self.uncorrected+self.corrected)) )
         self.corrected = 0
         self.uncorrected = 0
     

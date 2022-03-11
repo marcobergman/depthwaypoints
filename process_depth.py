@@ -42,9 +42,9 @@ class SimulatorFrame(wx.Frame):
         sizer.Add(text2, pos = (2, 0), flag = wx.ALL, border = 3)
         text3 = wx.StaticText(panel, label = "End time")
         sizer.Add(text3, pos = (2, 2), flag = wx.ALL, border = 3)
-        text4 = wx.StaticText(panel, label = "Start tide (m above MSL)")
+        text4 = wx.StaticText(panel, label = "Tide offset (m above MSL)")
         sizer.Add(text4, pos = (3, 0), flag = wx.ALL, border = 3)
-        text5 = wx.StaticText(panel, label = "End tide")
+        text5 = wx.StaticText(panel, label = "Max depth")
         sizer.Add(text5, pos = (3, 2), flag = wx.ALL, border = 3)
         text6 = wx.StaticText(panel, label = "Waypoint interval (m)")
         sizer.Add(text6, pos = (4, 0), flag = wx.ALL, border = 3)
@@ -60,13 +60,35 @@ class SimulatorFrame(wx.Frame):
         sizer.Add(filename, pos = (0,1), flag = wx.EXPAND|wx.ALL, border = 3, span=(1,4))
         
         def OnChange_filename(event):
-             buttonLoad.filename = filename.GetValue()
+            buttonLoad.filename = filename.GetValue()
         self.Bind(wx.EVT_TEXT, OnChange_filename, filename)
+        
+        def FilenameDialog(event = None):
+            dlg = wx.FileDialog(self, "NMEA0183 log file to open",
+                defaultDir = os.path.dirname(""),
+                defaultFile = os.path.basename("nmea.log"),
+                wildcard = "Log files (*.log)|*.log|All files|*")
+
+            if dlg.ShowModal() == wx.ID_OK:
+                print ("Selected", dlg.GetPath())
+                filename.SetValue(dlg.GetPath())
+
+            dlg.Destroy() 
+
+        self.Bind(wx.EVT_TEXT_ENTER, FilenameDialog, filename)
+
 
         # Set up buttons
+        buttonSelect = wx.Button(panel, label = "Select file" )
+        sizer.Add(buttonSelect, pos = (1, 4), flag = wx.ALIGN_CENTER|wx.ALL, border = 3)
+        buttonSelect.Bind(wx.EVT_BUTTON, FilenameDialog)
+
         buttonLoad = wx.Button(panel, label = "Load" )
-        sizer.Add(buttonLoad, pos = (1, 4), flag = wx.ALIGN_CENTER|wx.ALL, border = 3)
-        #buttonLoad.filename = filename.GetValue()
+        sizer.Add(buttonLoad, pos = (2, 4), flag = wx.ALIGN_CENTER|wx.ALL, border = 3)
+
+        buttonFetch = wx.Button(panel, label = "Fetch" )
+        sizer.Add(buttonFetch, pos = (3, 4), flag = wx.ALIGN_CENTER|wx.ALL, border = 3)
+        
         buttonGenerate = wx.Button(panel, label = "Generate" )
         sizer.Add(buttonGenerate, pos = (4, 4), flag = wx.ALIGN_CENTER|wx.ALL, border = 3)
         buttonGenerate.Disable()
@@ -75,16 +97,13 @@ class SimulatorFrame(wx.Frame):
         sizer.Add(startTime, pos = (2, 1), flag = wx.EXPAND|wx.ALL, border = 3)
         endTime = wx.TextCtrl(panel, value="", size=(80,20))
         sizer.Add(endTime, pos = (2, 3), flag = wx.EXPAND|wx.ALL, border = 3)
-        startTide = wx.TextCtrl(panel, value="0", size=(80,10))
-        sizer.Add(startTide, pos = (3, 1), flag = wx.EXPAND|wx.ALL, border = 3)
-        endTide = wx.TextCtrl(panel, value="0", size=(80,20))
-        sizer.Add(endTide, pos = (3, 3), flag = wx.EXPAND|wx.ALL, border = 3)
+        tideOffset = wx.TextCtrl(panel, value="0", size=(80,10))
+        sizer.Add(tideOffset, pos = (3, 1), flag = wx.EXPAND|wx.ALL, border = 3)
+        maxDepth = wx.TextCtrl(panel, value="5", size=(80,20))
+        sizer.Add(maxDepth, pos = (3, 3), flag = wx.EXPAND|wx.ALL, border = 3)
         interval = wx.TextCtrl(panel, value=str(DEFAULT_INTERVAL), size=(80,20))
         sizer.Add(interval, pos = (4, 1), flag = wx.EXPAND|wx.ALL, border = 3)
         
-        def OnChange_startTide(event):
-            endTide.SetValue(startTide.GetValue())
-        self.Bind(wx.EVT_TEXT, OnChange_startTide, startTide)
 
         outputfilename = wx.TextCtrl(panel, value=DEFAULT_OUTPUTPATH, size=(340,20))
         sizer.Add(outputfilename, pos = (5,1), flag = wx.EXPAND|wx.ALL, border = 3, span=(1,4))
@@ -102,6 +121,7 @@ class SimulatorFrame(wx.Frame):
             self.mindepth = 99.0
             self.maxdepth = -99.0
             text7.SetLabel("")
+            print ("Loading NMEA log file {}...".format(filename.GetValue()))
             for lines in open(filename.GetValue(), 'r'):
                 l += 1
                 line = lines.strip().split(',')
@@ -121,6 +141,10 @@ class SimulatorFrame(wx.Frame):
             endTime.SetValue(self.maxtime)
             buttonGenerate.Enable()
             outputfilename.SetValue(DEFAULT_OUTPUTPATH.replace(".gpx", "-20{}-{}-{}.gpx").format(self.mindate[4:6], self.mindate[2:4], self.mindate[0:2]))
+            print ("OK - File loaded.")
+            print ("self.mintime {} self.maxtime {} self.mindate {} self.maxdate {}".format(self.mintime, self.maxtime, self.mindate, self.maxdate))
+            
+            
         panel.SetSizerAndFit(sizer)
 
         buttonLoad.Bind(wx.EVT_BUTTON, loadFile)
@@ -161,8 +185,8 @@ class SimulatorFrame(wx.Frame):
             dm = math.floor((abs(actualDepth) - m )*10)
             icon = "{}_{}-{}".format(name, m, dm)
             
-            if (curdepth == self.mindepth):
-                print ("yes")
+            #if (curdepth == self.mindepth):
+            #    print ("yes")
          
             return icon
         
@@ -192,9 +216,15 @@ class SimulatorFrame(wx.Frame):
             
             fromTimeStamp = "" + self.mindate + startTime.GetValue()
             toTimeStamp = "" + self.maxdate + endTime.GetValue()
+            tideOffsetValue = float(tideOffset.GetValue())
+            maxDepthValue = float(maxDepth.GetValue())
+            if (tideOffsetValue != 0):
+                print ("Warning! Tide Offset = {}.".format(tideOffsetValue))
             text9.SetLabel("")
+            
             f = open(outputfilename.GetValue(), "w")
             f.write(GPX_HEADER)
+            timeStamp = ""
             
             for lines in open(filename.GetValue(), 'r'):
                 n += 1
@@ -210,26 +240,32 @@ class SimulatorFrame(wx.Frame):
                             rmc += 1
                             curlat = convertLatLon(line[3])
                             curlon = convertLatLon(line[5])
+                        else:
+                            print ("NOT within time interval")
+
                             
                     if (re.match(r"\$[A-Z]{2}DPT", line[0])):
                         if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
                             dpt += 1
-                            curdepth = line[1]
+                            curdepth = float(line[1])
                             distance = math.sqrt(((curlon - lastlon) * math.cos(curlat/180*math.pi)) ** 2 + (curlat - lastlat) ** 2) * 60 * 1852
                             
                             if (distance > 10000):
-                                lastlat = curlat; lastlon = curlon; #distance = 0; to deal with initial measurement
+                                lastlat = curlat; lastlon = curlon;   #distance = 0; to deal with initial measurement
                                 
                             if (distance > float (interval.GetValue())):
-                                waypoints += 1
                                 
-                                waterLevel = tidalData.getWeighedWaterLevel(nmeaToIso(timeStamp), curlat, curlon) / 100
+                                waterLevel = tidalData.getWeighedWaterLevel(nmeaToIso(timeStamp), curlat, curlon)
                                 
-                                gpx = '  <wpt lat="{}" lon="{}"><sym>{}</sym><extensions><opencpn:scale_min_max UseScale="true" ScaleMin="{}" /></extensions></wpt>' \
-                                    .format(curlat, curlon, depthIcon(curdepth, waterLevel), scale(i))
-                                ### print (gpx)
-                                f.write(gpx + "\n")
-                                lastlat = curlat; lastlon = curlon; i += 1;
+                                if (curdepth - waterLevel < maxDepthValue and curdepth != 0):
+                                    gpx = '  <wpt lat="{}" lon="{}"><sym>{}</sym><extensions><opencpn:scale_min_max UseScale="true" ScaleMin="{}" /></extensions></wpt>' \
+                                        .format(curlat, curlon, depthIcon(curdepth, waterLevel), scale(i))
+                                    ### print (gpx)
+                                    f.write(gpx + "\n")
+                                    waypoints += 1
+                                    i += 1
+                                lastlat = curlat
+                                lastlon = curlon
                 except Exception as e:
                     print ("exception processing line {} of {}: ".format(i, filename.GetValue()) + lines  + str(e))
                     pass
@@ -239,10 +275,16 @@ class SimulatorFrame(wx.Frame):
             f.write ('</gpx>')
             f.close()
             
-            print ("Waypoint file created with {} waypoints".format(waypoints))
+            print ("OK - Waypoint file created with {} waypoints".format(waypoints))
             tidalData.printStatistics()
            
         buttonGenerate.Bind(wx.EVT_BUTTON, generateFile)
+        
+        def fetchData (event):
+            print ("Fetching tidal data from the internet...")
+            tidalData.readStations(tidalData.FETCH_DATA)
+            
+        buttonFetch.Bind(wx.EVT_BUTTON, fetchData)
 
         panel.SetSizerAndFit(sizer)
 
@@ -257,10 +299,10 @@ import os
 full_path = os.path.realpath(__file__)
 path, filename = os.path.split(full_path)
 os.chdir(path)
-        
+
 import tidaldata
 tidalData = tidaldata.TidalData()
-tidalData.readStations()
+tidalData.readStations(tidalData.DONT_FETCH_DATA)
 
 app = wx.App()
 myFrame = SimulatorFrame(None, title = 'Depth processor')
