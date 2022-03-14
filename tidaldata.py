@@ -1,6 +1,6 @@
 import csv
 import glob
-import datetime
+from datetime import datetime
 import pytz
 import math
 
@@ -27,7 +27,9 @@ def getHttps(url):
     print ("Fetching {} from {}...".format(fname[0], o.netloc))
 
     data1 = r1.read()
-    f = open(fname[0], "wb")
+    
+    dateStamp = datetime.now().strftime("%Y-%m-%d-")
+    f = open(dateStamp + fname[0], "wb")
     f.write(data1)
     f.close()
     
@@ -62,6 +64,7 @@ class TidalData(object):
  
  
         def loadStationData(self):
+            # For this station, read tidal data from all CSV files that are defined for it, into self.waterLevel{} records
             print ("Loading {} for {}".format(self.csvFileName, self.stationName))
             local=pytz.timezone('Etc/GMT-1')
             
@@ -73,7 +76,7 @@ class TidalData(object):
                     for row in tidalRows:
                         try:
                             date_time_str = row[0] + " " + row[1];  # e.g. 26-2-2022 16:20:00
-                            date_time_obj = datetime.datetime.strptime(date_time_str, '%d-%m-%Y %H:%M:%S')
+                            date_time_obj = datetime.strptime(date_time_str, '%d-%m-%Y %H:%M:%S')
                             date_time_utc = local.localize(date_time_obj, is_dst=None).astimezone(pytz.utc).replace(tzinfo=None).isoformat()
                             if (row[4] != ""):
                                 self.waterLevel[date_time_utc] = row[4]
@@ -99,7 +102,7 @@ class TidalData(object):
 
 
         def getStationDistance(self, lat, lon):
-            # In NM between (lat, lon) and station
+            # Get the distance between the given latlon position to this station, in NM
             distance = math.sqrt(((lon - self.stationLon) * math.cos(lat/180*math.pi)) ** 2 + (lat - self.stationLat) ** 2) * 60
             return distance
  

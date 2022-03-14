@@ -21,10 +21,10 @@ else:
 
 
 
-class SimulatorFrame(wx.Frame):
+class DepthWaypointsFrame(wx.Frame):
 
     def __init__(self, parent, title):
-        super(SimulatorFrame, self).__init__(parent, title = title, size=(510,220))
+        super(DepthWaypointsFrame, self).__init__(parent, title = title, size=(510,220))
 
         self.InitUI()
         self.Centre()
@@ -248,6 +248,8 @@ class SimulatorFrame(wx.Frame):
                         if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
                             dpt += 1
                             curdepth = float(line[1])
+                            
+                            # Caluculate distance to previously generated waypoint
                             distance = math.sqrt(((curlon - lastlon) * math.cos(curlat/180*math.pi)) ** 2 + (curlat - lastlat) ** 2) * 60 * 1852
                             
                             if (distance > 10000):
@@ -267,7 +269,7 @@ class SimulatorFrame(wx.Frame):
                                 lastlat = curlat
                                 lastlon = curlon
                 except Exception as e:
-                    print ("exception processing line {} of {}: ".format(i, filename.GetValue()) + lines  + str(e))
+                    print ("exception processing line {} of {}: ".format(n, filename.GetValue()) + lines  + str(e))
                     pass
  
  
@@ -305,6 +307,6 @@ tidalData = tidaldata.TidalData()
 tidalData.readStations(tidalData.DONT_FETCH_DATA)
 
 app = wx.App()
-myFrame = SimulatorFrame(None, title = 'Depth processor')
+myFrame = DepthWaypointsFrame(None, title = 'Depth processor')
 app.MainLoop()
 
