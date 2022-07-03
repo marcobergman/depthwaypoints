@@ -72,6 +72,7 @@ class TidalData(object):
             for file in glob.glob(self.csvFileName):
                 with open(file) as csvfile:
                     tidalRows = csv.reader(csvfile, delimiter=';')
+                    headers = next(tidalRows, None)
                     n = 0
                     for row in tidalRows:
                         try:
@@ -82,7 +83,7 @@ class TidalData(object):
                                 self.waterLevel[date_time_utc] = row[4]
                                 n += 1
                         except Exception as e:
-                            #print ("*** loadStationData:", str(e))
+                            print ("*** loadStationData:", str(e))
                             pass
                     print ("- file {} read; {} waterLevels.".format(file, n))
                     f += 1
