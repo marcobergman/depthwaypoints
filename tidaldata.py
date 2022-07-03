@@ -3,12 +3,14 @@ import glob
 from datetime import datetime
 import pytz
 import math
+import os
 
 import http.client
 import re
 from urllib.parse import urlparse
 
 STATIONSFILE = "tidalstations.conf"
+DATADIR = "data/"
 
 
 
@@ -29,7 +31,7 @@ def getHttps(url):
     data1 = r1.read()
     
     dateStamp = datetime.now().strftime("%Y-%m-%d-")
-    f = open(dateStamp + fname[0], "wb")
+    f = open(DATADIR + dateStamp + fname[0], "wb")
     f.write(data1)
     f.close()
     
@@ -69,7 +71,7 @@ class TidalData(object):
             local=pytz.timezone('Etc/GMT-1')
             
             f = 0
-            for file in glob.glob(self.csvFileName):
+            for file in glob.glob(DATADIR + self.csvFileName):
                 with open(file) as csvfile:
                     tidalRows = csv.reader(csvfile, delimiter=';')
                     headers = next(tidalRows, None)
@@ -89,7 +91,7 @@ class TidalData(object):
                     f += 1
                     
             if (f == 0):
-                print ("No file: go online and press Fetch to download csv files from {}.\nSee the file '{}'.".format(self.stationSource, STATIONSFILE))
+                print ("No file: go online and press Fetch to download csv files.")
 
 
 
@@ -113,6 +115,10 @@ class TidalData(object):
 
 
     def readStations(self, action):
+        if (not os.path.exists(DATADIR)):
+            os.mkdir(DATADIR) # Initial
+        for file in glob.glob("*.csv"):
+            os.rename (file, DATADIR + file)
         try:
             with open (STATIONSFILE, newline='') as stationsfile:
                 allstations = csv.reader(stationsfile, delimiter='\t')
