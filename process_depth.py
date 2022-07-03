@@ -15,9 +15,11 @@ DEFAULT_INTERVAL = 15
 if (platform.system() == "Windows"):
     DEFAULT_FILENAME = "c:\\nmea.log"
     DEFAULT_OUTPUTPATH = "c:\\ProgramData\\opencpn\\layers\\depths.gpx"
+    AUTOFETCH = "autofetch.cmd"
 else:
     DEFAULT_FILENAME = "/extra/nmea.log"
     DEFAULT_OUTPUTPATH = ".opencpn/layers/depths.gpx"
+    AUTOFETCH = "autofetch.sh"
 
 
 
@@ -301,6 +303,13 @@ import os
 full_path = os.path.realpath(__file__)
 path, filename = os.path.split(full_path)
 os.chdir(path)
+
+print ("Attempting " + AUTOFETCH)
+import subprocess
+if os.path.exists(AUTOFETCH):
+    output = subprocess.check_output(AUTOFETCH, shell=False).decode("utf-8").split("\r\n")
+    for line in output:
+        print (line)
 
 import tidaldata
 tidalData = tidaldata.TidalData()
