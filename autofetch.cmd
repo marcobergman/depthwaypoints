@@ -1,0 +1,1 @@
+echo Executing autofetch.cmd
