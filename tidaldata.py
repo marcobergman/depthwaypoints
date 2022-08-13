@@ -85,7 +85,7 @@ class TidalData(object):
                                 self.waterLevel[date_time_utc] = row[4]
                                 n += 1
                         except Exception as e:
-                            print ("*** loadStationData:", str(e))
+                            print ("*** loadStationData: (file = {}, row={}, error = {}".format(file, row, str(e)))
                             pass
                     print ("- file {} read; {} waterLevels.".format(file, n))
                     f += 1
