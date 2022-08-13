@@ -4,6 +4,7 @@ from datetime import datetime
 import pytz
 import math
 import os
+import locale
 
 import http.client
 import re
@@ -68,6 +69,7 @@ class TidalData(object):
         def loadStationData(self):
             # For this station, read tidal data from all CSV files that are defined for it, into self.waterLevel{} records
             print ("Loading {} for {}".format(self.csvFileName, self.stationName))
+            locale.setlocale(locale.LC_ALL, 'en_US')
             local=pytz.timezone('Etc/GMT-1')
             
             f = 0
