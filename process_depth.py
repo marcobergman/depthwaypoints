@@ -242,8 +242,8 @@ class DepthWaypointsFrame(wx.Frame):
                             rmc += 1
                             curlat = convertLatLon(line[3])
                             curlon = convertLatLon(line[5])
-                        else:
-                            print ("NOT within time interval")
+                        #else:
+                        #    print ("NOT within time interval")
 
                             
                     if (re.match(r"\$[A-Z]{2}DPT", line[0])):

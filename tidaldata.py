@@ -25,14 +25,15 @@ def getHttps(url):
         print ("*** Could not retrieve {}".format(url))
         return
     d = r1.headers['content-disposition']
-    fname = re.findall("filename=(.+)", d)
-
-    print ("Fetching {} from {}...".format(fname[0], o.netloc))
+    print (d)
+    fname = re.findall("filename=(.+)", d)[0].split(";")[0]
+    
+    print ("Fetching {} from {}...".format(fname, o.netloc))
 
     data1 = r1.read()
     
     dateStamp = datetime.now().strftime("%Y-%m-%d-")
-    f = open(DATADIR + dateStamp + fname[0], "wb")
+    f = open(DATADIR + dateStamp + fname, "wb")
     f.write(data1)
     f.close()
     
