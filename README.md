@@ -10,4 +10,4 @@ The tool requires NMEA0183 DPT and RMC messages in a log file. To record such a 
 
 The tool provides corrections for tidal water if comma-separated are provided according to the configuration file `tidalstations.conf`.
 
-Create a windows self-containing executable with `pyinstaller --onefile process_depth.py`
+Create a windows self-containing executable with `pyinstaller --onefile process_depth.py --distpath .`

@@ -10,15 +10,18 @@ import locale
 
 GPX_HEADER='<?xml version="1.0" encoding="UTF-8" ?>\n<gpx xmlns="http://www.topografix.com/GPX/1/1" version="1.1">\n'
 DEFAULT_INTERVAL = 15
+TRACK_INTERVAL = 30
 
 
 if (platform.system() == "Windows"):
     DEFAULT_FILENAME = "c:\\nmea.log"
-    DEFAULT_OUTPUTPATH = "c:\\ProgramData\\opencpn\\layers\\depths.gpx"
+    DEFAULT_LAYERPATH = "c:\\ProgramData\\opencpn\\layers\\depths.gpx"
+    DEFAULT_TRACKPATH = "c:\\ProgramData\\opencpn\\tracks\\tracks.gpx"
     AUTOFETCH = "autofetch.cmd"
 else:
     DEFAULT_FILENAME = "/extra/nmea.log"
-    DEFAULT_OUTPUTPATH = ".opencpn/layers/depths.gpx"
+    DEFAULT_LAYERPATH = ".opencpn/layers/depths.gpx"
+    DEFAULT_TRACKPATH = ".opencpn/tracks/tracks.gpx"
     AUTOFETCH = "autofetch.sh"
 
 
@@ -26,7 +29,7 @@ else:
 class DepthWaypointsFrame(wx.Frame):
 
     def __init__(self, parent, title):
-        super(DepthWaypointsFrame, self).__init__(parent, title = title, size=(510,220))
+        super(DepthWaypointsFrame, self).__init__(parent, title = title, size=(510,245))
 
         self.InitUI()
         self.Centre()
@@ -54,8 +57,10 @@ class DepthWaypointsFrame(wx.Frame):
         sizer.Add(text7, pos = (1, 0), flag = wx.ALL, border = 3, span=(1,4))
         text9 = wx.StaticText(panel)
         sizer.Add(text9, pos = (4, 2), flag = wx.ALL, border = 3)
-        text10 = wx.StaticText(panel, label = "Output file GPX")
+        text10 = wx.StaticText(panel, label = "Output layer file")
         sizer.Add(text10, pos = (5, 0), flag = wx.ALL, border = 3)
+        text11 = wx.StaticText(panel, label = "Output track file")
+        sizer.Add(text11, pos = (6, 0), flag = wx.ALL, border = 3)
 
         ## Setup up controls
         filename = wx.TextCtrl(panel, value=DEFAULT_FILENAME)
@@ -101,14 +106,14 @@ class DepthWaypointsFrame(wx.Frame):
         sizer.Add(endTime, pos = (2, 3), flag = wx.EXPAND|wx.ALL, border = 3)
         tideOffset = wx.TextCtrl(panel, value="0", size=(80,10))
         sizer.Add(tideOffset, pos = (3, 1), flag = wx.EXPAND|wx.ALL, border = 3)
-        maxDepth = wx.TextCtrl(panel, value="5", size=(80,20))
+        maxDepth = wx.TextCtrl(panel, value="10", size=(80,20))
         sizer.Add(maxDepth, pos = (3, 3), flag = wx.EXPAND|wx.ALL, border = 3)
         interval = wx.TextCtrl(panel, value=str(DEFAULT_INTERVAL), size=(80,20))
         sizer.Add(interval, pos = (4, 1), flag = wx.EXPAND|wx.ALL, border = 3)
-        
-
-        outputfilename = wx.TextCtrl(panel, value=DEFAULT_OUTPUTPATH, size=(340,20))
-        sizer.Add(outputfilename, pos = (5,1), flag = wx.EXPAND|wx.ALL, border = 3, span=(1,4))
+        layerfilename = wx.TextCtrl(panel, value=DEFAULT_LAYERPATH, size=(340,20))
+        sizer.Add(layerfilename, pos = (5,1), flag = wx.EXPAND|wx.ALL, border = 3, span=(1,4))
+        trackfilename = wx.TextCtrl(panel, value=DEFAULT_TRACKPATH, size=(340,20))
+        sizer.Add(trackfilename, pos = (6,1), flag = wx.EXPAND|wx.ALL, border = 3, span=(1,4))
 
 
 
@@ -142,7 +147,8 @@ class DepthWaypointsFrame(wx.Frame):
             startTime.SetValue(self.mintime)
             endTime.SetValue(self.maxtime)
             buttonGenerate.Enable()
-            outputfilename.SetValue(DEFAULT_OUTPUTPATH.replace(".gpx", "-20{}-{}-{}.gpx").format(self.mindate[4:6], self.mindate[2:4], self.mindate[0:2]))
+            layerfilename.SetValue(DEFAULT_LAYERPATH.replace(".gpx", "-20{}-{}-{}.gpx").format(self.mindate[4:6], self.mindate[2:4], self.mindate[0:2]))
+            trackfilename.SetValue(DEFAULT_TRACKPATH.replace("tracks.gpx", "20{}-{}-{}-tracks.gpx").format(self.mindate[4:6], self.mindate[2:4], self.mindate[0:2]))
             print ("OK - File loaded.")
             print ("self.mintime {} self.maxtime {} self.mindate {} self.maxdate {}".format(self.mintime, self.maxtime, self.mindate, self.maxdate))
             
@@ -206,7 +212,7 @@ class DepthWaypointsFrame(wx.Frame):
 
 
 
-        def generateFile (event):
+        def generateLayerFile (event):
             rmc = 0
             dpt = 0
             waypoints = 0
@@ -214,7 +220,7 @@ class DepthWaypointsFrame(wx.Frame):
             lastlon = 0
             i = 0  # cycle for scale pendulum
             n = 0  # line counter for verbose exception handling 
-            print ("Generating waypoint file", outputfilename.GetValue())
+            print ("Generating layer file", layerfilename.GetValue())
             
             fromTimeStamp = "" + self.mindate + startTime.GetValue()
             toTimeStamp = "" + self.maxdate + endTime.GetValue()
@@ -224,7 +230,7 @@ class DepthWaypointsFrame(wx.Frame):
                 print ("Warning! Tide Offset = {}.".format(tideOffsetValue))
             text9.SetLabel("")
             
-            f = open(outputfilename.GetValue(), "w")
+            f = open(layerfilename.GetValue(), "w")
             f.write(GPX_HEADER)
             timeStamp = ""
             
@@ -262,7 +268,7 @@ class DepthWaypointsFrame(wx.Frame):
                                 waterLevel = tidalData.getWeighedWaterLevel(nmeaToIso(timeStamp), curlat, curlon)
                                 
                                 if (curdepth - waterLevel < maxDepthValue and curdepth != 0):
-                                    gpx = '  <wpt lat="{}" lon="{}"><sym>{}</sym><extensions><opencpn:scale_min_max UseScale="true" ScaleMin="{}" /></extensions></wpt>' \
+                                    gpx = '  <wpt lat="{:.6f}" lon="{:.6f}"><sym>{}</sym><extensions><opencpn:scale_min_max UseScale="true" ScaleMin="{}" /></extensions></wpt>' \
                                         .format(curlat, curlon, depthIcon(curdepth, waterLevel), scale(i))
                                     ### print (gpx)
                                     f.write(gpx + "\n")
@@ -281,8 +287,78 @@ class DepthWaypointsFrame(wx.Frame):
             
             print ("OK - Waypoint file created with {} waypoints".format(waypoints))
             tidalData.printStatistics()
+            
+            
+        def formatTimestamp(timeStamp):
+            # format 130223060009 into 2023-02-13T06:00:09Z
+            return "20{}-{}-{}T{}:{}:{}Z".format(timeStamp[4:6], timeStamp[2:4], timeStamp[0:2], timeStamp[6:8], timeStamp[8:10], timeStamp[10:12])
+            
+            
+        def generateTrackFile (event):
+            rmc = 0
+            waypoints = 0
+            lastlat = 0
+            lastlon = 0
+            i = 0  # cycle for scale pendulum
+            n = 0  # line counter for verbose exception handling 
+            print ("Generating track file", trackfilename.GetValue())
+            
+            fromTimeStamp = "" + self.mindate + startTime.GetValue()
+            toTimeStamp = "" + self.maxdate + endTime.GetValue()
+            text9.SetLabel("")
+            
+            f = open(trackfilename.GetValue(), "w")
+            f.write(GPX_HEADER)
+            f.write("<trk><name></name><trkseg>")
+            timeStamp = ""
+            
+            for lines in open(filename.GetValue(), 'r'):
+                n += 1
+                line = lines.strip().split(',')
+                
+                try:
+                    if (re.match(r"\$[A-Z]{2}RMC", line[0])):
+                        curdate = line[9]
+                        curtime = line[1][:6]
+                        timeStamp = "" + curdate + curtime
+                        
+                        if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
+                            rmc += 1
+                            curlat = convertLatLon(line[3])
+                            curlon = convertLatLon(line[5])
+
+                            # Caluculate distance to previously generated waypoint
+                            distance = math.sqrt(((curlon - lastlon) * math.cos(curlat/180*math.pi)) ** 2 + (curlat - lastlat) ** 2) * 60 * 1852
+                            
+                            if (distance > 10000):
+                                lastlat = curlat; lastlon = curlon;   #distance = 0; to deal with initial measurement
+                                
+                            if (distance > float (TRACK_INTERVAL)):
+                                
+                                gpx = '  <trkpt lat="{:.6f}" lon="{:.6f}"><time>{}</time></trkpt>' \
+                                    .format(curlat, curlon, formatTimestamp(timeStamp))
+                                ### print (gpx)
+                                f.write(gpx + "\n")
+                                waypoints += 1
+                                i += 1
+                                
+                                lastlat = curlat
+                                lastlon = curlon
+                except Exception as e:
+                    print ("exception processing line {} of {}: ".format(n, filename.GetValue()) + lines  + str(e))
+                    pass
+ 
+            f.write ('</gpx></trkseg></trk>')
+            f.close()
+            
+            print ("OK - Track file created with {} waypoints".format(waypoints))
+
            
-        buttonGenerate.Bind(wx.EVT_BUTTON, generateFile)
+        def generateFiles(event):
+            generateLayerFile (event)
+            generateTrackFile (event)
+           
+        buttonGenerate.Bind(wx.EVT_BUTTON, generateFiles)
         
         def fetchData (event):
             print ("Fetching tidal data from the internet...")
