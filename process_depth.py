@@ -348,7 +348,7 @@ class DepthWaypointsFrame(wx.Frame):
                     print ("exception processing line {} of {}: ".format(n, filename.GetValue()) + lines  + str(e))
                     pass
  
-            f.write ('</gpx></trkseg></trk>')
+            f.write ('</trkseg></trk></gpx>')
             f.close()
             
             print ("OK - Track file created with {} waypoints".format(waypoints))
