@@ -17,7 +17,8 @@ DATADIR = "data/"
 
 def getHttps(url):
     o = urlparse(url)
-    conn = http.client.HTTPSConnection(o.netloc)
+    import ssl
+    conn = http.client.HTTPSConnection(o.netloc, context = ssl._create_unverified_context())
     conn.request("GET", "{}?{}".format(o.path, o.query))
 
     r1 = conn.getresponse()
@@ -25,7 +26,7 @@ def getHttps(url):
         print ("*** Could not retrieve {}".format(url))
         return
     d = r1.headers['content-disposition']
-    print (d)
+    #print (d)
     fname = re.findall("filename=(.+)", d)[0].split(";")[0]
     
     print ("Fetching {} from {}...".format(fname, o.netloc))
