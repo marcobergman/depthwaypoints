@@ -130,19 +130,22 @@ class DepthWaypointsFrame(wx.Frame):
             text7.SetLabel("")
             print ("Loading NMEA log file {}...".format(filename.GetValue()))
             for lines in open(filename.GetValue(), 'r'):
-                l += 1
-                line = lines.strip().split(',')
-                if (re.match(r"\$[A-Z]{2}RMC", line[0]) and line[1] != ""):
-                    rmc += 1
-                    if (line[1] < self.mintime): self.mintime = line[1][:6]
-                    if (line[1] > self.maxtime): self.maxtime = line[1][:6]
-                    if (line[9] < self.mindate): self.mindate = line[9]
-                    if (line[9] > self.maxdate): self.maxdate = line[9]
-                if (re.match(r"\$[A-Z]{2}DPT", line[0])):
-                    depth = float(line[1])
-                    if (depth < self.mindepth): self.mindepth = depth;
-                    if (depth > self.maxdepth): self.maxdepth = depth;
-                    dpt += 1
+                try:
+                    l += 1
+                    line = lines.strip().split(',')
+                    if (re.match(r"\$[A-Z]{2}RMC", line[0]) and line[1] != ""):
+                        rmc += 1
+                        if (line[1] < self.mintime): self.mintime = line[1][:6]
+                        if (line[1] > self.maxtime): self.maxtime = line[1][:6]
+                        if (line[9] < self.mindate): self.mindate = line[9]
+                        if (line[9] > self.maxdate): self.maxdate = line[9]
+                    if (re.match(r"\$[A-Z]{2}DPT", line[0])):
+                        depth = float(line[1])
+                        if (depth < self.mindepth): self.mindepth = depth;
+                        if (depth > self.maxdepth): self.maxdepth = depth;
+                        dpt += 1
+                except Exception as e:
+                    print ("could not read line {}: {}".format(l, line))
             text7.SetLabel("Lines={}, RMC={}, DPT={}, depth={} - {}".format(l, rmc, dpt, round(self.mindepth, 1), round(self.maxdepth, 1)))
             startTime.SetValue(self.mintime)
             endTime.SetValue(self.maxtime)
