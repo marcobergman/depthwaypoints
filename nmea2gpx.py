@@ -29,7 +29,10 @@ def convertLatLon (latLon):
 
 def formatTimestamp(timeStamp):
     # format 130223060009 into 2023-02-13T06:00:09Z
-    return "20{}-{}-{}T{}:{}:{}Z".format(timeStamp[4:6], timeStamp[2:4], timeStamp[0:2], timeStamp[6:8], timeStamp[8:10], timeStamp[10:12])
+    try:
+       return "20{0}-{1}-{2}T{3}:{4}:{5}Z".format(timeStamp[4:6], timeStamp[2:4], timeStamp[0:2], timeStamp[6:8], timeStamp[8:10], timeStamp[10:12])
+    except Exception as e:
+       print ("exception formatting timeStamp " + timeStamp, str(e));
             
             
 def generateTrackFile (filename, fromTimeStamp, toTimeStamp):
@@ -38,7 +41,7 @@ def generateTrackFile (filename, fromTimeStamp, toTimeStamp):
     lastlat = 0
     lastlon = 0
     n = 0  # line counter for verbose exception handling 
-    print ("Processing NMEA file", filename);
+    print ("Processing NMEA file {0}".format(filename));
     
     f = open("x", "w");
     f.close();
@@ -49,13 +52,16 @@ def generateTrackFile (filename, fromTimeStamp, toTimeStamp):
     for lines in open(filename, 'r'):
         n += 1;
         line = lines.strip().split(',');
+        # print ("lines", lines);
         
         try:
             if (re.match(r"\$[A-Z]{2}RMC", line[0])):
                 curdate = line[9];
                 curtime = line[1][:6];
                 timeStamp = "" + curdate + curtime;
+                
                 formattedTimeStamp = formatTimestamp(timeStamp);
+
                 
                 if (timeStamp >= fromTimeStamp and timeStamp <= toTimeStamp):
                     rmc += 1;
@@ -71,7 +77,7 @@ def generateTrackFile (filename, fromTimeStamp, toTimeStamp):
                     if (distance > float (TRACK_INTERVAL)):
                         if (curdate != lastDate and not f.closed):
                             f.close();
-                            print ("File created with {} trackpoints out of {} RMC sentences".format(trackpoints, rmc))
+                            print ("File created with {0} trackpoints out of {1} RMC sentences".format(trackpoints, rmc))
                             rmc = 0;
                             trackpoints = 0;
                         if (f.closed):
@@ -80,9 +86,9 @@ def generateTrackFile (filename, fromTimeStamp, toTimeStamp):
                             f = open(trackfilename, "w");
                             f.write(GPX_HEADER);
                             f.write("<trk><name>" + trackName + "</name><trkseg>");
-                            print ("Generating track file", trackfilename);
+                            print ("Generating track file {0}".format(trackfilename));
                         
-                        gpx = '  <trkpt lat="{:.6f}" lon="{:.6f}"><time>{}</time></trkpt>' \
+                        gpx = '  <trkpt lat="{0:.6f}" lon="{1:.6f}"><time>{2}</time></trkpt>' \
                             .format(curlat, curlon, formattedTimeStamp);
                         ### print (gpx)
                         f.write(gpx + "\n");
@@ -92,13 +98,13 @@ def generateTrackFile (filename, fromTimeStamp, toTimeStamp):
                         lastlon = curlon;
                 lastDate = curdate;
         except Exception as e:
-            print ("exception processing line {} of {}: ".format(n, filename) + lines  + str(e));
+            print ("exception processing line {0} of {1}: {2} error {3}".format(str(n), filename, lines, str(e)));
         if (f.closed):
             exit(1);
 
     f.write ('</trkseg></trk></gpx>')
     f.close(); 
-    print ("File created with {} trackpoints out of {} RMC sentences".format(trackpoints, rmc))
+    print ("File created with {0} trackpoints out of {1} RMC sentences".format(trackpoints, rmc))
     shutil.move(filename, TRASH_DIR + os.sep + os.path.basename(filename));
 
 if __name__ == '__main__':
